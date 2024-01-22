@@ -80,12 +80,13 @@ def write_list_to_file(file_path, input_list):
 #               MAIN                      #
 # --------------------------------------- #
 
+print(len(sys.argv))
 # Accept Parameters
 if len(sys.argv) == 3:
     # Get input and output file names from command-line arguments
     input_file_name = sys.argv[1]
     output_file_name = sys.argv[2]
-elif len(sys.argv) == 3:
+elif len(sys.argv) == 2:
     input_file_name = sys.argv[1]
     output_file_name = None
 else:
