@@ -10,21 +10,76 @@ import sys
 
 def read_computers_file(input_file=""):
     hostnames = []
-    try:
-        # Open and read the JSON file
-        with open(input_file, 'r') as file:
-            hostnames = read_sharphound_file(file)
-    except FileNotFoundError:
-        print(f"File '{input_file}' not found.")
+
+    if input_file.endswith(".txt"):
+        hostnames = read_txt_file(input_file)
+    elif input_file.endswith(".csv"):
+        hostnames = read_csv_file(input_file)
+    if not hostnames:
+        hostnames = read_sharphound_file(input_file)
+    if not hostnames:
+        hostnames = read_bloodhound_file(input_file)
+
+    return hostnames
+
+
+def read_txt_file(input_file=""):
+    hostnames = []
+    with open(input_file, "r") as file:
+        for line in file:
+            hostnames.append(line.rstrip())
 
     return hostnames
 
 
 def read_sharphound_file(input_file=None):
     hostnames = []
-    data = json.load(input_file)
-    for computer_object in data['data']:
-        hostnames.append(computer_object['Properties']['name'])
+    try:
+        with open(input_file, 'r') as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        print(f"File '{input_file}' not found.")
+        sys.exit()
+    except json.decoder.JSONDecodeError:
+        return
+    try:
+        for computer_object in data['data']:
+            hostnames.append(computer_object['Properties']['name'])
+    except KeyError:
+        print("Not Sharphound")
+    return hostnames
+
+
+def read_bloodhound_file(input_file=""):
+    hostnames = []
+    try:
+        with open(input_file, 'r') as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        print(f"File '{input_file}' not found.")
+        sys.exit()
+    except json.decoder.JSONDecodeError:
+        return
+    try:
+        for computer_object in data['nodes'].values():
+            hostnames.append(computer_object['label'])
+    except KeyError:
+        print("Not Bloodhound")
+    return hostnames
+
+
+def read_csv_file(input_file):
+    import re
+    hostnames = []
+    lines = []
+    with open(input_file, 'r') as file:
+        for line in file:
+            if "name:" in line:
+                lines.append(line)
+
+    for line in lines:
+        hostnames.append(re.search(r',name: ""([^"]+)', line).group(1))
+
     return hostnames
 
 
