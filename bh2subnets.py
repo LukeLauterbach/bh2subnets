@@ -1,39 +1,31 @@
+import argparse
 import json
 import socket
 import sys
-
-# --------------------------------------- #
-#               VARIABLES                 #
-# --------------------------------------- #
-
-input_file_name = "computers.json"
-output_file_name = "subnets.txt"
-
-device_names = []
-subnets = []
 
 
 # --------------------------------------- #
 #               FUNCTIONS                 #
 # --------------------------------------- #
 
-def read_computers_file():
+def read_computers_file(input_file=""):
+    hostnames = []
     try:
         # Open and read the JSON file
-        with open(input_file_name, 'r') as file:
-            # Load JSON data
-            data = json.load(file)
-
-            for computer_object in data["computers"]:
-                device_names.append(computer_object['Properties']['name'])
+        with open(input_file, 'r') as file:
+            hostnames = read_sharphound_file(file)
     except FileNotFoundError:
-        print(f"File '{input_file_name}' not found.")
-    except json.JSONDecodeError:
-        print(f"Error decoding JSON in file '{input_file_name}'.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
+        print(f"File '{input_file}' not found.")
 
-    return device_names
+    return hostnames
+
+
+def read_sharphound_file(input_file=None):
+    hostnames = []
+    data = json.load(input_file)
+    for computer_object in data['data']:
+        hostnames.append(computer_object['Properties']['name'])
+    return hostnames
 
 
 def get_first_three_octets(l_hostname):
@@ -76,30 +68,39 @@ def write_list_to_file(file_path, input_list):
         print(f"An error occurred: {e}")
 
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Get list of subnets from BloodHound/SharpHound data")
+    parser.add_argument("list_of_hostnames", type=str,
+                        help="File with list of hostnames. SharpHound computers.json, BloodHound JSON export, or "
+                             "txt file with hostname per line accepted.")
+    parser.add_argument("-o", "--output-file", type=str,
+                        help="(OPTIONAL) Output filename. If no filename is provided, output will be displayed in the"
+                             "terminal only.")
+
+    args = parser.parse_args()
+
+    return args.list_of_hostnames, args.output_file
+
+def main(input_file="", output_file=""):
+    subnets = []
+    device_names = read_computers_file(input_file=input_file)
+    for hostname in device_names:
+        subnet = get_first_three_octets(hostname)
+        if subnet is not None:
+            subnets.append(subnet)
+    subnets = deduplicate_and_add_subnet(subnets)
+
+    for subnet in subnets:
+        print(subnet)
+
+    if output_file:
+        write_list_to_file(output_file_name, subnets)
+
+
 # --------------------------------------- #
 #               MAIN                      #
 # --------------------------------------- #
 
-# Accept Parameters
-if len(sys.argv) == 3:
-    # Get input and output file names from command-line arguments
-    input_file_name = sys.argv[1]
-    output_file_name = sys.argv[2]
-elif len(sys.argv) == 2:
-    input_file_name = sys.argv[1]
-    output_file_name = None
-else:
-    print("Usage: python3 bh2subnet.py {input_file_name} {output_file_name}")
-    print("If no output filename is provided, output will just go to console output")
-
-device_names = read_computers_file()
-for hostname in device_names:
-    subnet = get_first_three_octets(hostname)
-    if subnet is not None:
-        subnets.append(subnet)
-subnets = deduplicate_and_add_subnet(subnets)
-
-for subnet in subnets:
-    print(subnet)
-
-write_list_to_file(output_file_name, subnets)
+if __name__ == "__main__":
+    main_input_file, main_output_file = parse_arguments()
+    main(input_file=main_input_file, output_file=main_output_file)
