@@ -129,8 +129,8 @@ def parse_arguments():
                         help="File with list of hostnames. SharpHound computers.json, BloodHound JSON export, or "
                              "txt file with hostname per line accepted.")
     parser.add_argument("-o", "--output-file", type=str,
-                        help="(OPTIONAL) Output filename. If no filename is provided, output will be displayed in the"
-                             " terminal only.")
+                        help="(OPTIONAL) Output filename. If no filename is provided, output will be displayed in the "
+                             "terminal only.")
 
     args = parser.parse_args()
 
