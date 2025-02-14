@@ -2,6 +2,7 @@ import argparse
 import json
 import socket
 import sys
+from tqdm import tqdm
 
 
 # --------------------------------------- #
@@ -139,7 +140,7 @@ def parse_arguments():
 def main(input_file="", output_file=""):
     subnets = []
     device_names = read_computers_file(input_file=input_file)
-    for hostname in device_names:
+    for hostname in tqdm(device_names, desc="Processing host", unit="host"):
         subnet = get_first_three_octets(hostname)
         if subnet is not None:
             subnets.append(subnet)
